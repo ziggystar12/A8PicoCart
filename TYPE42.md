@@ -47,9 +47,9 @@ other cartridge types, and filesystem layout keep their existing settings.
 
 ## Testing
 
-The contributor reports unchanged 1 MiB AGI-ANTIC games loading and running
-on the preceding v0.4 implementation, using a Winbond A8PicoCart and an
-Atari 800XL with Ultimate 1MB. This integration retains that Type42 bus
+I tested the preceding v0.4 implementation on my Winbond A8PicoCart and
+Atari 800XL with Ultimate 1MB. My unchanged 1 MiB AGI-ANTIC games load
+and run. This integration retains that Type42 bus
 implementation and incorporates the current fork's menu/loader updates.
 Hardware testing of the combined SDK 2.3.0 build is still pending.
 
