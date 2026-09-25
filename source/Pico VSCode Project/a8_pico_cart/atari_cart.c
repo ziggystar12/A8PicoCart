@@ -36,6 +36,9 @@
 #include "pico/stdlib.h"
 #include "hardware/sync.h"
 #include "hardware/clocks.h"
+#ifdef A8_ENABLE_TYPE42
+#include "type42_image.h"
+#endif
 
 #include "ff.h"
 #include "fatfs_disk.h"
@@ -128,6 +131,7 @@ char errorBuf[40];
 #define CART_TYPE_JACART_32K		40	// 32K
 #define CART_TYPE_JACART_64K		41	// 64K
 #define CART_TYPE_JACART_128K		42	// 128K
+#define CART_TYPE_ATARIMAX_8MBIT  43  // 1 MiB; internal ID, CAR header type is 42
 #define CART_TYPE_JNSOFT_16k		252	// 16K
 #define CART_TYPE_T2000_8K			253 // 8k
 #define CART_TYPE_ATR				254
@@ -454,6 +458,19 @@ int load_file(char *filename) {
 			strcpy(errorBuf, "Bad CAR file");
 			goto closefile;
 		}
+#ifdef A8_ENABLE_TYPE42
+		if (carFileHeader[4] == 0 && carFileHeader[5] == 0 &&
+			carFileHeader[6] == 0 && carFileHeader[7] == 42) {
+			cart_type = type42_load_image(&fil, cart_ram, errorBuf)
+				? CART_TYPE_ATARIMAX_8MBIT : CART_TYPE_NONE;
+			if (cart_type && !type42_verify_fast_flash()) {
+				strcpy(errorBuf, "Type42 fast flash verify failed");
+				cart_type = CART_TYPE_NONE;
+			}
+			if (cart_type) type42_prepare_bus();
+			goto closefile;
+		}
+#endif
 		car_type = carFileHeader[7];
 		if (car_type == 1)			{ cart_type = CART_TYPE_8K; expectedSize = 8192; }
 		else if (car_type == 2)		{ cart_type = CART_TYPE_16K; expectedSize = 16384; }
@@ -1763,6 +1780,9 @@ void emulate_cartridge(int cartType) {
 	else if (cartType == CART_TYPE_SW_XEGS_128K) emulate_XEGS_128k(1);
 	else if (cartType == CART_TYPE_BOUNTY_BOB) emulate_bounty_bob();
 	else if (cartType == CART_TYPE_ATARIMAX_1MBIT) emulate_atarimax_128k();
+#ifdef A8_ENABLE_TYPE42
+	else if (cartType == CART_TYPE_ATARIMAX_8MBIT) emulate_type42();
+#endif
 	else if (cartType == CART_TYPE_WILLIAMS_64K) emulate_williams();
 	else if (cartType == CART_TYPE_OSS_16K_TYPE_B) emulate_OSS_B();
 	else if (cartType == CART_TYPE_OSS_8K) emulate_OSS_B();

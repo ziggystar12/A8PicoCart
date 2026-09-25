@@ -16,12 +16,11 @@ cmake_minimum_required(VERSION 3.13)
 
 # initialize the SDK based on PICO_SDK_PATH
 # note: this must happen before project()
+set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR})
+set(PICO_BOARD myboard)
 include(pico_sdk_import.cmake)
 
 project(a8_pico_cart)
-
-set(PICO_BOARD_HEADER_DIRS ${CMAKE_SOURCE_DIR}) 
-set(PICO_BOARD myboard)
 
 # initialize the Raspberry Pi Pico SDK
 pico_sdk_init()
@@ -32,6 +31,18 @@ add_executable(a8_pico_cart)
 target_compile_definitions(a8_pico_cart PRIVATE
     PICO_FLASH_SIZE_BYTES=16777216
 )
+
+# Large ROMs use flash directly at an experimental Winbond-only speed.
+# Keep the existing SRAM-only firmware as the default for other flash chips.
+option(A8_ENABLE_TYPE42 "Enable experimental 1 MiB Atarimax support (Winbond flash)" OFF)
+set(A8_TYPE42_FLASH_DIVIDER 2 CACHE STRING "Type42 flash divider (2 or 4)")
+if(A8_ENABLE_TYPE42)
+    target_compile_definitions(a8_pico_cart PRIVATE
+        A8_ENABLE_TYPE42=1 PICO_STACK_SIZE=0x1000
+        A8_TYPE42_FLASH_DIVIDER=${A8_TYPE42_FLASH_DIVIDER})
+    target_sources(a8_pico_cart PRIVATE
+        type42_image.c type42_bus.c type42_loop.S)
+endif()
 
 #pico_set_linker_script(a8_pico_cart ${CMAKE_CURRENT_SOURCE_DIR}/memmap_custom.ld)
 

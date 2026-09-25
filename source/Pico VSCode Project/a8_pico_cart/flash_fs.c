@@ -180,6 +180,16 @@ void flash_fs_read_FAT_sector(uint16_t fat_sector, void *buffer)
     return;
 }
 
+const uint8_t *flash_fs_sector_pointer(uint32_t fat_sector)
+{
+    if (fat_sector >= NUM_FAT_SECTORS) return NULL;
+    uint16_t entry = fs_map.sectors[fat_sector];
+    uint16_t sector = getMapSector(entry);
+    if (!entry || sector < 15 || sector >= NUM_FLASH_SECTORS) return NULL;
+    return (const uint8_t *)(XIP_BASE + HW_FLASH_STORAGE_BASE +
+        sector * FLASH_SECTOR_SIZE + getMapOffset(entry) * 512);
+}
+
 void flash_fs_write_FAT_sector(uint16_t fat_sector, const void *buffer)
 {
     uint16_t mapEntry = fs_map.sectors[fat_sector];

@@ -16,8 +16,11 @@
 #define __FLASH_FS_H__
 
 #include <stdbool.h>
+#include <stdint.h>
 
 int flash_fs_mount();
+/* Read-only address of an existing FAT sector; NULL if unmapped/invalid. */
+const uint8_t *flash_fs_sector_pointer(uint32_t fat_sector);
 void flash_fs_create();
 void flash_fs_sync();
 void flash_fs_read_FAT_sector(uint16_t fat_sector, void *buffer);

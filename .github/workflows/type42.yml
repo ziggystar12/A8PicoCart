@@ -1,0 +1,47 @@
+name: Type42 build and software checks
+on:
+  push:
+    paths: ['source/Pico VSCode Project/a8_pico_cart/**', '.github/workflows/type42.yml']
+  pull_request:
+    paths: ['source/Pico VSCode Project/a8_pico_cart/**', '.github/workflows/type42.yml']
+permissions:
+  contents: read
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        type42: ['OFF', 'ON']
+    env:
+      SRC: source/Pico VSCode Project/a8_pico_cart
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install build and test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cmake ninja-build
+          python -m pip install unicorn==2.1.4 pyelftools==0.32 py65==1.2.0
+          git clone --depth 1 --branch 2.3.0 https://github.com/raspberrypi/pico-sdk.git "$RUNNER_TEMP/pico-sdk"
+          git -C "$RUNNER_TEMP/pico-sdk" submodule update --init --depth 1 lib/tinyusb
+      - name: Build firmware
+        run: |
+          cmake -S "$SRC" -B build -G Ninja -DPICO_SDK_PATH="$RUNNER_TEMP/pico-sdk" -DCMAKE_BUILD_TYPE=Release -DPICO_NO_PICOTOOL=1 -DA8_ENABLE_TYPE42=${{ matrix.type42 }}
+          cmake --build build --parallel 2
+          python "$SRC/bin_to_uf2.py" build/a8_pico_cart.bin build/a8_pico_cart.uf2
+          python "$SRC/tests/compiled_loader.py" build/a8_pico_cart.elf
+      - name: Check Type42 bus and image loader
+        if: matrix.type42 == 'ON'
+        run: |
+          python "$SRC/tests/compiled_bus.py" build/a8_pico_cart.elf
+          for variant in standard ram nodma; do
+            python "$SRC/tests/make_diagnostic.py" build/diagnostics "$variant"
+          done
+          cc -I"$SRC" -I"$SRC/fatfs" "$SRC/tests/host_type42.c" "$SRC/type42_image.c" "$SRC/fatfs/ff.c" "$SRC/fatfs/ffunicode.c" -o build/host-type42
+          build/host-type42 build/diagnostics/*.car
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a8picocart-type42-${{ matrix.type42 }}
+          path: build/a8_pico_cart.uf2
