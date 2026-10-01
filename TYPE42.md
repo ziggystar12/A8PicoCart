@@ -49,9 +49,20 @@ other cartridge types, and filesystem layout keep their existing settings.
 
 I tested the preceding v0.4 implementation on my Winbond A8PicoCart and
 Atari 800XL with Ultimate 1MB. My unchanged 1 MiB AGI-ANTIC games load
-and run. This integration retains that Type42 bus
-implementation and incorporates the current fork's menu/loader updates.
-Hardware testing of the combined SDK 2.3.0 build is still pending.
+and run. I also use the same Type42 handler in my shared MPE firmware;
+existing cartridges continue to work alongside the native games.
+
+The [current Type42 Winbond UF2](https://github.com/ziggystar12/A8PicoCart/releases/tag/type42-winbond-2026-09-30)
+is built entirely from this public branch with Pico SDK 2.3.0. Its linked
+loader passes 19 cases and its bus passes 5,140 modeled cases. The download
+includes matching source. These are software checks of this exact build;
+the hardware experience above identifies the handler and my setup.
+
+This upstream contribution remains the unchanged 1 MiB CAR handler.
+The MPE game compiler, native game runtime, PrismA8 conversion and optional
+HamsterOS are maintained separately. Game-specific picture profiles and
+the Atari display client travel in compiled `.mpe` packages. No commercial
+games or proprietary graphics sources are included in this contribution.
 
 Software tests use only synthetic data unless local game files are explicitly
 passed to the loader test. No commercial game data is included.
